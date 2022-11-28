@@ -133,6 +133,7 @@ impl Node for Directory {
 
     async fn open_file(
         self: Arc<Self>,
+        _path: &str,
         _dir: bool,
         read: bool,
         write: bool,
@@ -208,11 +209,21 @@ impl WasiDir for OpenDir {
         match path {
             "." if oflags.contains(OFlags::EXCLUSIVE) => Err(Error::exist()),
             "." if oflags.contains(OFlags::TRUNCATE) => Err(Error::io()), // FIXME
-            "." | "" => self.link.clone().open_file(odir, read, write, flags).await,
+            "." | "" => {
+                self.link
+                    .clone()
+                    .open_file(path, odir, read, write, flags)
+                    .await
+            }
 
             ".." if oflags.contains(OFlags::EXCLUSIVE) => Err(Error::exist()),
             ".." if oflags.contains(OFlags::TRUNCATE) => Err(Error::io()), // FIXME
-            ".." => self.link.prev().open_file(odir, read, write, flags).await,
+            ".." => {
+                self.link
+                    .prev()
+                    .open_file(path, odir, read, write, flags)
+                    .await
+            }
 
             name => {
                 let mut ilock = self.link.inode.data.write().await;
@@ -232,18 +243,20 @@ impl WasiDir for OpenDir {
                         };
 
                         ilock.content.insert(name.into(), child.clone());
-                        child.open_file(odir, read, write, flags).await
+                        child.open_file(path, odir, read, write, flags).await
                     }
 
                     // Truncate the file.
                     (Some(child), _) if oflags.contains(OFlags::TRUNCATE) => {
-                        let mut open = child.open_file(odir, false, true, FdFlags::empty()).await?;
+                        let mut open = child
+                            .open_file(path, odir, false, true, FdFlags::empty())
+                            .await?;
                         open.set_filestat_size(0).await?;
                         Ok(open)
                     }
 
                     // Open the file.
-                    (Some(child), _) => child.open_file(odir, read, write, flags).await,
+                    (Some(child), _) => child.open_file(path, odir, read, write, flags).await,
                 }
             }
         }
@@ -447,7 +460,10 @@ impl WasiDir for OpenDir {
                 let flags = FdFlags::empty();
                 let ilock = self.link.inode.data.read().await;
                 let child = ilock.content.get(name).ok_or_else(Error::not_found)?;
-                let mut file = child.clone().open_file(false, false, false, flags).await?;
+                let mut file = child
+                    .clone()
+                    .open_file(path, false, false, false, flags)
+                    .await?;
                 file.get_filestat().await
             }
         }
@@ -504,7 +520,10 @@ impl WasiDir for OpenDir {
                 let flags = FdFlags::empty();
                 let ilock = self.link.inode.data.read().await;
                 let child = ilock.content.get(name).ok_or_else(Error::not_found)?;
-                let mut file = child.clone().open_file(false, false, false, flags).await?;
+                let mut file = child
+                    .clone()
+                    .open_file(path, false, false, false, flags)
+                    .await?;
                 file.set_times(atime, mtime).await
             }
         }
