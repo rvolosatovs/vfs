@@ -49,6 +49,7 @@ jobs:
           system: x86_64-linux
           check: fmt
 
+    name: a ${{ matrix.config.check }} ${{ matrix.config.some }} ${{ matrix.config.nonexistent }} b ${{ matrix.other }} c
     runs-on: ${{ matrix.config.host }}
     steps:
     - uses: actions/checkout@v3
