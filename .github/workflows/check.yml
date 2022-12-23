@@ -26,31 +26,8 @@ jobs:
     - run: nix fmt
 
   checks:
-    strategy:
-      matrix:
-        config:
-        - host: macos-latest
-          system: x86_64-darwin
-          check: clippy
-
-        - host: macos-latest
-          system: x86_64-darwin
-          check: nextest
-
-        - host: ubuntu-latest
-          system: x86_64-linux
-          check: clippy
-
-        - host: ubuntu-latest
-          system: x86_64-linux
-          check: nextest
-
-        - host: ubuntu-latest
-          system: x86_64-linux
-          check: fmt
-
-    name: a ${{ matrix.config.check }} ${{ matrix.config.some }} ${{ matrix.config.nonexistent }} b ${{ matrix.other }} c
-    runs-on: ${{ matrix.config.host }}
+    name: a${{ matrix.config.check }} ("  "test  ) ${{ matrix.config.some }}${{ matrix.config.nonexistent }} b ${{ matrix.other }} c (other ${{ matrix.other }})
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: cachix/install-nix-action@v18
